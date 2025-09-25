@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chemical Calculator (Molarity & Normality)</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9fafb; padding: 20px; }
+    h1 { font-size: 1.6rem; }
+    .card { background: #fff; border-radius: 10px; padding: 20px; max-width: 700px; margin: auto; box-shadow: 0 2px 6px rgba(0,0,0,0.1);}
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, select, button { padding: 6px; margin-top: 4px; width: 100%; box-sizing: border-box; }
+    button { cursor: pointer; border: none; border-radius: 5px; margin-top: 12px;}
+    button.calc { background: #2563eb; color: white; }
+    button.reset { background: #e5e7eb; }
+    .result { margin-top: 20px; padding: 10px; background: #f3f4f6; border-radius: 8px; }
+    .note { font-size: 0.85rem; color: #374151; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Chemical Calculator</h1>
+    <p>Select calculation type and reagent form:</p>
+
+    <label>Mode</label>
+    <select id="mode">
+      <option value="molarity">Molarity (M)</option>
+      <option value="normality">Normality (N)</option>
+    </select>
+
+    <label>Form</label>
+    <select id="formType">
+      <option value="solid">Solid</option>
+      <option value="liquid">Liquid</option>
+    </select>
+
+    <label>Desired concentration</label>
+    <input type="number" id="conc" placeholder="Enter M or N" step="any"/>
+
+    <label>Desired volume</label>
+    <input type="number" id="volume" placeholder="Enter volume" step="any"/>
+    <select id="volumeUnit">
+      <option value="mL">mL</option>
+      <option value="L">L</option>
+    </select>
+
+    <label>Molar mass (g/mol)</label>
+    <input type="number" id="molarMass" placeholder="e.g. 58.44 for NaCl" step="any"/>
+
+    <div id="normalityInputs" style="display:none">
+      <label>Equivalents per mole (valence)</label>
+      <input type="number" id="equivalents" value="1" step="any"/>
+    </div>
+
+    <label>Purity (%)</label>
+    <input type="number" id="purity" value="100" step="any"/>
+
+    <div id="liquidInputs" style="display:none">
+      <label>Specific gravity (g/mL)</label>
+      <input type="number" id="spGravity" value="1.0" step="any"/>
+      <label>Liquid concentration (%)</label>
+      <input type="number" id="liqPercent" value="100" step="any"/>
+    </div>
+
+    <button class="calc" onclick="calculate()">Calculate</button>
+    <button class="reset" onclick="resetForm()">Reset</button>
+
+    <div id="result" class="result" style="display:none"></div>
+    <div class="note">
+      <strong>Notes:</strong>
+      <ul>
+        <li>Moles = concentration × volume (L)</li>
+        <li>Mass (g) = moles × molar mass / purity fraction</li>
+        <li>Normality uses equivalents per mole (eq = molar mass / valence)</li>
+        <li>Liquid volume (mL) = mass ÷ (density × purity fraction)</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    function toLiters(v, unit) {
+      return unit === "L" ? v : v/1000;
+    }
+
+    function calculate() {
+      const mode = document.getElementById("mode").value;
+      const formType = document.getElementById("formType").value;
+      const conc = parseFloat(document.getElementById("conc").value) || 0;
+      const vol = parseFloat(document.getElementById("volume").value) || 0;
+      const volUnit = document.getElementById("volumeUnit").value;
+      const molarMass = parseFloat(document.getElementById("molarMass").value) || 0;
+      const purity = (parseFloat(document.getElementById("purity").value) || 100) / 100;
+      const equivalents = parseFloat(document.getElementById("equivalents").value) || 1;
+      const spGravity = parseFloat(document.getElementById("spGravity").value) || 1.0;
+      const liqPercent = (parseFloat(document.getElementById("liqPercent").value) || 100) / 100;
+
+      const V = toLiters(vol, volUnit);
+      let moles=0, mass=0, liqVol=null;
+
+      if (conc <=0 || V <=0 || molarMass<=0) {
+        document.getElementById("result").innerHTML = "<span style='color:red'>Please enter valid concentration, volume and molar mass.</span>";
+        document.getElementById("result").style.display = "block";
+        return;
+      }
+
+      if (mode==="molarity") {
+        moles = conc * V;
+        mass = (moles * molarMass)/purity;
+      } else {
+        moles = (conc * V)/equivalents;
+        mass = (conc * V * molarMass)/(equivalents * purity);
+      }
+
+      if (formType==="liquid") {
+        liqVol = mass/(spGravity*liqPercent);
+      }
+
+      let html = `<p><strong>Mode:</strong> ${mode}</p>`;
+      html += `<p>Moles needed: <strong>${moles.toPrecision(4)}</strong></p>`;
+      html += `<p>Mass required (solid): <strong>${mass.toFixed(4)}</strong> g</p>`;
+      if (liqVol) {
+        html += `<p>Liquid volume required: <strong>${liqVol.toFixed(3)}</strong> mL</p>`;
+      }
+
+      document.getElementById("result").innerHTML = html;
+      document.getElementById("result").style.display = "block";
+    }
+
+    function resetForm() {
+      document.querySelector("form")?.reset();
+      document.getElementById("result").style.display="none";
+    }
+
+    // show/hide inputs dynamically
+    document.getElementById("mode").addEventListener("change", e=>{
+      document.getElementById("normalityInputs").style.display = e.target.value==="normality"?"block":"none";
+    });
+    document.getElementById("formType").addEventListener("change", e=>{
+      document.getElementById("liquidInputs").style.display = e.target.value==="liquid"?"block":"none";
+    });
+  </script>
+</body>
+</html>
